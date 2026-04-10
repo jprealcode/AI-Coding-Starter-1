@@ -104,6 +104,26 @@ Zugriffsschutz: Row Level Security (RLS) auf allen Folgetabellen
 - `zod` — Formular-Validierung (bereits im Stack)
 - `react-hook-form` — Formular-Handling (bereits im Stack)
 
+## Implementation Notes (Backend)
+
+### Datenbank
+- `public.profiles` Tabelle mit RLS (Migration: `supabase/migrations/20260410001_profiles.sql`)
+- `is_admin()` SECURITY DEFINER Funktion verhindert RLS-Rekursion
+- DB-Trigger `trg_prevent_last_admin_deactivation` schützt den letzten Admin
+- `custom_access_token_hook` bettet Rolle in JWT ein (muss in Supabase Dashboard aktiviert werden)
+
+### API-Routen
+- `POST /api/admin/users` — Benutzer anlegen (Service Role, mit Rollback)
+- `PATCH /api/admin/users/[userId]` — Name/Rolle/Status ändern
+- `POST /api/admin/users/[userId]` mit `action: reset-password` — Passwort zurücksetzen
+
+### Env-Vars
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- Dokumentiert in `.env.local.example`
+
+### Tests
+- 6 Integration Tests für `POST /api/admin/users` (happy path, 401, 403, 400, Rollback)
+
 ## QA Test Results
 _To be added by /qa_
 
