@@ -1,6 +1,6 @@
 # PROJ-1: Authentifizierung & Benutzerverwaltung
 
-## Status: Planned
+## Status: Architected
 **Created:** 2026-04-10
 **Last Updated:** 2026-04-10
 
@@ -43,7 +43,66 @@
 
 ---
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Seitenstruktur & Komponenten
+```
+App
+├── /login                          ← öffentlich (ohne Anmeldung erreichbar)
+│   └── LoginForm
+│       ├── E-Mail-Feld
+│       ├── Passwort-Feld
+│       ├── Anmelden-Button
+│       └── Fehlermeldung-Banner
+│
+├── AuthGuard                       ← prüft bei JEDER Seite: angemeldet?
+│   │                                 Nein → weiterleiten zu /login
+│   │
+│   ├── Layout (nach Login)
+│   │   ├── Header
+│   │   │   ├── Logo / App-Name
+│   │   │   └── Benutzer-Menü (Name, Passwort ändern, Abmelden)
+│   │   └── [Geschützte Seiten des Systems]
+│   │
+│   └── /admin/benutzer             ← nur für Rolle "admin" erreichbar
+│       ├── Benutzertabelle
+│       │   └── Zeilen: Name, E-Mail, Rolle, Status, letzter Login, Aktionen
+│       ├── Neuer-Benutzer-Dialog
+│       ├── Benutzer-Bearbeiten-Dialog
+│       ├── Deaktivieren-Bestätigungs-Dialog
+│       └── Passwort-Zurücksetzen-Dialog
+│
+└── /konto/passwort                 ← für alle angemeldeten Benutzer
+    └── Passwort-Ändern-Formular
+```
+
+### Datenmodell
+Supabase Auth verwaltet Anmeldedaten intern. Eine eigene `profiles`-Tabelle ergänzt Rollen und Status:
+
+```
+Profile
+├── user_id      → Verknüpfung mit Supabase Auth (auth.users)
+├── display_name → Anzeigename des Benutzers
+├── role         → "admin" oder "approver"
+├── is_active    → Konto aktiv (true) oder gesperrt (false)
+└── last_seen_at → Zeitstempel des letzten Logins
+
+Gespeichert in: Supabase PostgreSQL
+Zugriffsschutz: Row Level Security (RLS) auf allen Folgetabellen
+```
+
+### Tech-Entscheidungen
+| Entscheidung | Warum |
+|---|---|
+| Supabase Auth | Übernimmt Passwort-Hashing, JWT, Session-Verlängerung — kein eigenes Auth-System nötig |
+| Eigene Profile-Tabelle | Supabase Auth speichert keine Rollen — unsere Tabelle ergänzt genau das |
+| Row Level Security (RLS) | Datenbankregeln sichern auf DB-Ebene ab, dass Approver nur ihre Daten sehen |
+| Next.js Middleware | Prüft bei jedem Seitenaufruf automatisch die Session — kein manuelles Absichern jeder Route |
+| Rolle im JWT-Token (custom claims) | Rolle direkt im Token → kein DB-Abfrage bei jeder Berechtigungsprüfung |
+
+### Abhängigkeiten (Pakete)
+- `@supabase/ssr` — Supabase Auth für Next.js (Server-Side Rendering)
+- `zod` — Formular-Validierung (bereits im Stack)
+- `react-hook-form` — Formular-Handling (bereits im Stack)
 
 ## QA Test Results
 _To be added by /qa_
