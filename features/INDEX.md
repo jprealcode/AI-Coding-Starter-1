@@ -14,7 +14,7 @@
 
 | ID | Feature | Status | Spec | Created |
 |----|---------|--------|------|---------|
-| PROJ-1 | Authentifizierung & Benutzerverwaltung | In Progress | [Spec](PROJ-1-authentifizierung-benutzerverwaltung.md) | 2026-04-10 |
+| PROJ-1 | Authentifizierung & Benutzerverwaltung | In Review | [Spec](PROJ-1-authentifizierung-benutzerverwaltung.md) | 2026-04-10 |
 | PROJ-2 | Verwaltungsobjekte & Stammdaten | Planned | [Spec](PROJ-2-verwaltungsobjekte-stammdaten.md) | 2026-04-10 |
 | PROJ-3 | Rechnungseingang — Quellen (Gmail, Upload, Drive) | Planned | [Spec](PROJ-3-rechnungseingang-quellen.md) | 2026-04-10 |
 | PROJ-4 | PDF-Klassifizierung & OCR-Pipeline | Planned | [Spec](PROJ-4-pdf-klassifizierung-ocr-pipeline.md) | 2026-04-10 |

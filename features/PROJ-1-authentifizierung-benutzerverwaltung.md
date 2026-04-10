@@ -125,7 +125,71 @@ Zugriffsschutz: Row Level Security (RLS) auf allen Folgetabellen
 - 6 Integration Tests für `POST /api/admin/users` (happy path, 401, 403, 400, Rollback)
 
 ## QA Test Results
-_To be added by /qa_
+
+**Datum:** 2026-04-10 | **Tester:** QA Engineer (automatisiert)
+**Gesamtergebnis:** ⚠️ IN REVIEW — 2 High Bugs, 3 Medium Bugs gefunden
+
+### Acceptance Criteria — Prüfprotokoll
+
+| # | Kriterium | Status | Anmerkung |
+|---|-----------|--------|-----------|
+| 1 | Login-Seite mit E-Mail- und Passwort-Feld | ✅ PASS | E2E Test |
+| 2 | Fehleranzeige bei falschen Anmeldedaten (kein Hinweis welches Feld) | ✅ PASS | Unit + E2E Test |
+| 3 | Session bleibt aktiv (JWT via Supabase Auth) | ✅ PASS | Architektur korrekt |
+| 4 | Logout-Funktion vorhanden | ✅ PASS | Header-Menü, Server Action |
+| 5 | Admin kann Benutzer anlegen | ✅ PASS | API Route mit Rollback |
+| 6 | Admin kann Benutzer deaktivieren | ⚠️ PARTIAL | BUG-001: Session bleibt gültig bis JWT-Ablauf |
+| 7 | Zwei Rollen: admin / approver | ✅ PASS | DB Schema + RLS |
+| 8 | Rollenbasierter Zugriff | ✅ PASS | Proxy + RLS |
+| 9 | Passwort-Änderung durch Benutzer selbst | ✅ PASS | Server Action |
+| 10 | Passwort-Reset durch Admin | ✅ PASS | API Route [userId] POST |
+| 11 | Benutzerübersicht (Tabelle) | ✅ PASS | Admin-Seite /admin/benutzer |
+
+### Edge Cases
+
+| Edge Case | Status | Anmerkung |
+|-----------|--------|-----------|
+| Deaktivierter Benutzer → Login gesperrt | ⚠️ PARTIAL | BUG-002: Bypass wenn kein Profil vorhanden |
+| Mehrfach falsches Passwort → Sperre | ✅ PASS | Supabase Auth Rate Limiting |
+| Letzter Admin kann nicht deaktiviert werden | ✅ PASS | DB Trigger + API-seitige Prüfung |
+
+### Bugs
+
+**BUG-001** — Severity: **HIGH**
+- **Titel:** Deaktivierter Benutzer behält App-Zugriff bis JWT abläuft
+- **Beschreibung:** Wenn Admin einen Benutzer deaktiviert, werden bestehende aktive Sessions nicht beendet. Der Benutzer kann die App weiter nutzen bis sein JWT abläuft (Standard: 1 Stunde).
+- **Schritte:** 1. Benutzer ist angemeldet. 2. Admin deaktiviert ihn. 3. Benutzer kann weiter navigieren.
+- **Fix:** `toggleUserActive(false)` muss `adminClient.auth.admin.signOut(userId, { scope: 'global' })` aufrufen.
+
+**BUG-002** — Severity: **HIGH**
+- **Titel:** `is_active`-Check in Login-Form kann umgangen werden wenn kein Profil existiert
+- **Beschreibung:** `if (profile && !profile.is_active)` → wenn `profile` null ist (Supabase-Auth-User ohne Profil), wird der Active-Check übersprungen und der Login durchgeführt.
+- **Fix:** Fail-closed: Login blockieren wenn kein Profil existiert. `if (!profile || !profile.is_active) { signOut(); setError(...) }`
+
+**BUG-003** — Severity: **Medium**
+- **Titel:** Fehlende `noValidate` auf Login-Formular
+- **Beschreibung:** Chrome's native E-Mail-Validierung überschreibt unsere Zod-Fehlermeldungen. Das custom Styling erscheint nicht, stattdessen das Browser-Popup.
+- **Fix:** `<form noValidate ...>` in `login-form.tsx`
+
+**BUG-004** — Severity: **Medium**
+- **Titel:** PATCH /api/admin/users/[userId] gibt 403 für unauthentifizierte Requests (sollte 401)
+- **Beschreibung:** `requireAdmin()` gibt null für beide Fälle zurück (nicht angemeldet + kein Admin). HTTP 403 (Forbidden) ist semantisch falsch für "nicht angemeldet".
+- **Fix:** `requireAdmin()` unterscheidet: kein User → 401, kein Admin → 403
+
+**BUG-005** — Severity: **Medium**
+- **Titel:** Proxy leitet API-Routes bei fehlender Auth zu /login weiter statt 401 zurückzugeben
+- **Beschreibung:** Unauthentifizierte Requests an `/api/*` erhalten einen 302-Redirect zu `/login`. Für programmatischen API-Zugriff ist 401 korrekt.
+- **Fix:** In `proxy.ts` API-Pfade (`/api/*`) mit `401 Unauthorized` beantworten statt zu redirecten.
+
+### Testergebnisse
+- **Unit Tests:** 13/13 ✅ (`npm test`)
+- **E2E Tests:** 19/19 ✅ Chromium (`npm run test:e2e -- --project=chromium`)
+- **Getestete Browser:** Chromium
+- **Responsive:** 375px ✅, 768px ✅, 1440px ✅
+- **Sicherheits-Audit:** Service-Role-Key nicht im HTML ✅ | API ohne Auth nicht ausführbar ✅
+
+### Produktions-Empfehlung
+**❌ NICHT BEREIT** — 2 High Bugs müssen vor Deployment behoben werden (BUG-001, BUG-002).
 
 ## Deployment
 _To be added by /deploy_
