@@ -1,6 +1,6 @@
 # PROJ-1: Authentifizierung & Benutzerverwaltung
 
-## Status: Architected
+## Status: In Progress
 **Created:** 2026-04-10
 **Last Updated:** 2026-04-10
 
