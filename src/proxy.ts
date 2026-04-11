@@ -49,6 +49,10 @@ export async function proxy(request: NextRequest) {
 
   // All other routes require authentication
   if (!user) {
+    // BUG-005 fix: API-Routen erhalten 401, keine Redirect (für programmatischen Zugriff)
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Nicht authentifiziert' }, { status: 401 })
+    }
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

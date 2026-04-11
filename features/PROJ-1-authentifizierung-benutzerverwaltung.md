@@ -1,8 +1,8 @@
 # PROJ-1: Authentifizierung & Benutzerverwaltung
 
-## Status: In Review
+## Status: Approved
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-10
+**Last Updated:** 2026-04-11
 
 ## Dependencies
 - None (Basis für alle anderen Features)
@@ -189,7 +189,7 @@ Zugriffsschutz: Row Level Security (RLS) auf allen Folgetabellen
 - **Sicherheits-Audit:** Service-Role-Key nicht im HTML ✅ | API ohne Auth nicht ausführbar ✅
 
 ### Produktions-Empfehlung
-**❌ NICHT BEREIT** — 2 High Bugs müssen vor Deployment behoben werden (BUG-001, BUG-002).
+**✅ BEREIT** — Alle 5 Bugs behoben (2026-04-11). BUG-001: Session-Invalidierung via `signOut(userId, 'global')`. BUG-002: fail-closed Profile-Check. BUG-003: `noValidate` auf Login-Form. BUG-004: 401/403 korrekt unterschieden. BUG-005: API-Routen geben 401 statt Redirect.
 
 ## Deployment
 _To be added by /deploy_

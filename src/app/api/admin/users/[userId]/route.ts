@@ -11,10 +11,14 @@ function adminClient() {
   )
 }
 
-async function requireAdmin() {
+type AdminResult =
+  | { user: { id: string; email?: string } }
+  | { authError: 'unauthenticated' | 'forbidden' }
+
+async function requireAdmin(): Promise<AdminResult> {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  if (!user) return { authError: 'unauthenticated' }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -22,8 +26,8 @@ async function requireAdmin() {
     .eq('user_id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') return null
-  return user
+  if (profile?.role !== 'admin') return { authError: 'forbidden' }
+  return { user }
 }
 
 // PATCH /api/admin/users/[userId] — update display_name and/or role
@@ -37,10 +41,13 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
-  const admin = await requireAdmin()
-  if (!admin) {
-    return NextResponse.json({ error: 'Nicht authentifiziert oder keine Berechtigung' }, { status: 403 })
+  const result = await requireAdmin()
+  if ('authError' in result) {
+    const status = result.authError === 'unauthenticated' ? 401 : 403
+    const message = result.authError === 'unauthenticated' ? 'Nicht authentifiziert' : 'Keine Berechtigung'
+    return NextResponse.json({ error: message }, { status })
   }
+  const admin = result.user
 
   const { userId } = await params
   const body = await request.json()
@@ -105,9 +112,11 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
-  const admin = await requireAdmin()
-  if (!admin) {
-    return NextResponse.json({ error: 'Nicht authentifiziert oder keine Berechtigung' }, { status: 403 })
+  const result = await requireAdmin()
+  if ('authError' in result) {
+    const status = result.authError === 'unauthenticated' ? 401 : 403
+    const message = result.authError === 'unauthenticated' ? 'Nicht authentifiziert' : 'Keine Berechtigung'
+    return NextResponse.json({ error: message }, { status })
   }
 
   const { userId } = await params

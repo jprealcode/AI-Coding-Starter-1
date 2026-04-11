@@ -1,6 +1,6 @@
 # PROJ-2: Verwaltungsobjekte & Stammdaten
 
-## Status: Architected
+## Status: In Progress
 **Created:** 2026-04-10
 **Last Updated:** 2026-04-11
 
@@ -128,6 +128,23 @@ DELETE /api/admin/properties/[id]/bank-accounts/[bid]      → Bankverbindung l�
 |---|---|
 | `xlsx` (SheetJS) | Excel-Dateien lesen und schreiben (Import + Export) |
 | `ibantools` | IBAN-Validierung nach ISO 13616 inkl. Prüfzifferberechnung |
+
+## Implementation Notes (Frontend)
+
+### Gebaut (2026-04-11)
+- `src/app/(protected)/admin/objekte/page.tsx` — Server Component, lädt Properties aus Supabase, Admin-Guard
+- `src/components/properties/properties-client.tsx` — Tabelle mit Suche, Export, client-seitiges Filtern
+- `src/components/properties/new-property-dialog.tsx` — Dialog zum Anlegen neuer Objekte (react-hook-form + zod)
+- `src/components/properties/property-detail-sheet.tsx` — Sheet mit Stammdaten (View + Edit), Bankverbindungen (Add, Set-Default, Delete), Deaktivieren/Reaktivieren
+- `src/components/properties/import-dialog.tsx` — Excel-Import mit client-seitigem Parsing (SheetJS), Vorschau-Tabelle, Duplikat-Handling (Skip/Overwrite)
+
+### Neue Pakete
+- `xlsx` (SheetJS) — Excel Import + Export
+- `ibantools` — IBAN-Validierung
+
+### Abweichungen
+- Excel-Import: client-seitig (kein Supabase Storage) — einfacher und schneller
+- Suche: client-seitig (mit 20–100 Objekten ausreichend)
 
 ## QA Test Results
 _To be added by /qa_

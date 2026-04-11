@@ -58,7 +58,8 @@ export function LoginForm() {
         .eq('user_id', authData.user.id)
         .single()
 
-      if (profile && !profile.is_active) {
+      // BUG-002 fix: fail-closed — kein Profil = kein Login
+      if (!profile || !profile.is_active) {
         await supabase.auth.signOut()
         setError('Ihr Konto ist gesperrt. Bitte kontaktieren Sie den Administrator.')
         return
@@ -77,7 +78,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />

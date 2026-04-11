@@ -82,12 +82,19 @@ export async function toggleUserActive(userId: string, isActive: boolean) {
     }
   }
 
-  const { error } = await adminClient()
+  const client = adminClient()
+
+  const { error } = await client
     .from('profiles')
     .update({ is_active: isActive })
     .eq('user_id', userId)
 
   if (error) return { error: error.message }
+
+  // BUG-001 fix: beim Deaktivieren bestehende Sessions sofort beenden
+  if (!isActive) {
+    await client.auth.admin.signOut(userId, 'global')
+  }
 
   revalidatePath('/admin/benutzer')
   return { success: true }
