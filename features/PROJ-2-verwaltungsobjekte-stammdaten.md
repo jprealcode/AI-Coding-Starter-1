@@ -1,8 +1,8 @@
 # PROJ-2: Verwaltungsobjekte & Stammdaten
 
-## Status: Planned
+## Status: Architected
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-10
+**Last Updated:** 2026-04-11
 
 ## Dependencies
 - Requires: PROJ-1 (Authentifizierung) — für Admin-Zugang zur Stammdatenverwaltung
@@ -43,7 +43,91 @@
 
 ---
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Seitenstruktur & Komponenten
+```
+/admin/objekte                     ← Listenansicht (nur für Admin)
+├── Aktionsleiste
+│   ├── Suchfeld (Objektnummer, Bezeichnung, Adresse)
+│   ├── [+ Neues Objekt]-Button
+│   ├── [Excel importieren]-Button
+│   └── [Excel exportieren]-Button
+│
+├── Objekttabelle
+│   └── Zeilen: Objektnummer | Bezeichnung | Ort | Bankverbindungen | Status | Aktionen
+│       └── Klick → öffnet Detail-Sheet (seitliches Panel)
+│
+└── Import-Dialog
+    ├── Schritt 1: Excel-Datei hochladen
+    ├── Schritt 2: Vorschau-Tabelle (gültige Zeilen grün, fehlerhafte rot)
+    └── Schritt 3: Bestätigen → Import
+
+Objekt-Detail-Sheet (seitliches Panel, kein Seitenwechsel)
+├── Stammdaten-Abschnitt
+│   ├── Objektnummer, Bezeichnung, Straße, PLZ, Ort, Notiz
+│   └── [Bearbeiten]-Button → Felder werden editierbar
+│
+├── Bankverbindungen-Abschnitt
+│   ├── Liste: IBAN | BIC | Kontoinhaber | Bank | Standard? | Löschen
+│   └── [+ Bankverbindung hinzufügen]-Zeile
+│
+└── Fußzeile: [Objekt deaktivieren] | [Speichern]
+```
+
+### Datenmodell
+
+```
+Verwaltungsobjekt (Tabelle: properties)
+├── Objektnummer       → eindeutige ID (z. B. "HV-042"), vom Admin vergeben
+├── Bezeichnung        → lesbarer Name ("Musterstraße 12, München")
+├── Straße             → für automatische Rechnungszuordnung (PROJ-4)
+├── PLZ + Ort          → ebenfalls für Zuordnung
+├── Notiz              → freitext, intern
+├── Ist aktiv?         → inaktive Objekte erscheinen nicht in Dropdowns
+└── Erstellt am        → automatisch gesetzt
+
+Bankverbindung (Tabelle: bank_accounts, 1–N pro Objekt)
+├── IBAN               → validiert nach ISO 13616 (Prüfziffer geprüft)
+├── BIC                → SWIFT-Code der Bank
+├── Kontoinhaber       → Name des Kontoinhabers
+├── Bank-Name          → lesbarer Name der Bank
+└── Ist Standard?      → genau eine Bankverbindung pro Objekt ist Standard
+```
+
+Gespeichert in: **Supabase PostgreSQL** (zwei Tabellen: `properties` + `bank_accounts`)
+
+### Tech-Entscheidungen
+
+| Entscheidung | Warum |
+|---|---|
+| Excel-Import vollständig im Browser (kein Server-Upload) | SheetJS liest die Datei lokal, wir schicken nur die geparsten Daten ans Backend. Kein temporärer Datei-Upload zu Supabase Storage nötig. |
+| Suche: ILIKE in Datenbank | Mit 20–100 Objekten kein Volltext-Index nötig. ILIKE deckt alle Suchfelder ab und bleibt einfach. |
+| Detail als Sheet (seitliches Panel) statt eigene Seite | Buchhalter kann Liste im Hintergrund sehen, kein Seitenwechsel nötig — schneller im Tagesgeschäft. |
+| Standard-Bankverbindung: DB-Constraint sichert Eindeutigkeit | Datenbank garantiert, dass nie zwei Standard-IBANs pro Objekt existieren — unabhängig vom Frontend. |
+| IBAN-Validierung: ibantools Bibliothek | Fertig-Implementierung nach ISO 13616 — verhindert Tippfehler vor dem SEPA-Zahllauf (PROJ-7). |
+| Rollenbasierter Zugriff: nur Admin darf schreiben | Approver lesen Objekte (für Rechnungs-Zuordnung), Admin schreibt. RLS in Datenbank sichert das ab. |
+
+### API-Routen
+
+```
+GET    /api/admin/properties                               → alle Objekte (mit Bankanzahl + Suche)
+POST   /api/admin/properties                               → neues Objekt anlegen
+POST   /api/admin/properties/import                        → Excel-Batch-Import
+GET    /api/admin/properties/[id]                          → Objekt-Detail inkl. Bankverbindungen
+PATCH  /api/admin/properties/[id]                          → Felder oder Status aktualisieren
+GET    /api/admin/properties/export                        → Daten für Excel-Export
+
+POST   /api/admin/properties/[id]/bank-accounts            → Bankverbindung hinzufügen
+PATCH  /api/admin/properties/[id]/bank-accounts/[bid]      → Bankverbindung bearbeiten
+DELETE /api/admin/properties/[id]/bank-accounts/[bid]      → Bankverbindung löschen
+```
+
+### Abhängigkeiten (neue Pakete)
+
+| Paket | Zweck |
+|---|---|
+| `xlsx` (SheetJS) | Excel-Dateien lesen und schreiben (Import + Export) |
+| `ibantools` | IBAN-Validierung nach ISO 13616 inkl. Prüfzifferberechnung |
 
 ## QA Test Results
 _To be added by /qa_
