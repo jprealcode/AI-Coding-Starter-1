@@ -129,6 +129,21 @@ DELETE /api/admin/properties/[id]/bank-accounts/[bid]      → Bankverbindung l�
 | `xlsx` (SheetJS) | Excel-Dateien lesen und schreiben (Import + Export) |
 | `ibantools` | IBAN-Validierung nach ISO 13616 inkl. Prüfzifferberechnung |
 
+## Implementation Notes (Backend)
+
+### Gebaut (2026-04-11)
+- `supabase/migrations/20260411001_properties.sql` — Tabellen `properties` + `bank_accounts`, RLS (read für alle Authentifizierten, write nur Admins), Trigger für Single-Default-Bankverbindung, Indexes
+- `src/lib/require-admin.ts` — Shared Auth-Helper + serviceClient (wiederverwendbar in allen Properties-Routes)
+- `src/app/api/admin/properties/route.ts` — GET (Liste + Suche via ILIKE), POST (anlegen mit Duplikat-Erkennung 409)
+- `src/app/api/admin/properties/import/route.ts` — POST Bulk-Import mit IBAN-Validierung + Duplikat-Mode (skip/overwrite)
+- `src/app/api/admin/properties/[id]/route.ts` — GET (Detail + Bankverbindungen), PATCH (Felder + is_active)
+- `src/app/api/admin/properties/[id]/bank-accounts/route.ts` — POST (hinzufügen, erster wird auto-Default)
+- `src/app/api/admin/properties/[id]/bank-accounts/[bid]/route.ts` — PATCH (Set-Default, DB-Trigger räumt andere auf), DELETE
+- `src/app/api/admin/properties/route.test.ts` — 12 Integration Tests (GET + POST): 401, 403, 400, 409, 201 Happy Path
+
+### Tests
+- 25/25 Tests grün (13 PROJ-1 Unit + 12 PROJ-2 Integration)
+
 ## Implementation Notes (Frontend)
 
 ### Gebaut (2026-04-11)
