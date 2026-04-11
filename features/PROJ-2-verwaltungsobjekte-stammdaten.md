@@ -1,6 +1,6 @@
 # PROJ-2: Verwaltungsobjekte & Stammdaten
 
-## Status: In Progress
+## Status: Approved
 **Created:** 2026-04-10
 **Last Updated:** 2026-04-11
 
@@ -162,7 +162,80 @@ DELETE /api/admin/properties/[id]/bank-accounts/[bid]      → Bankverbindung l�
 - Suche: client-seitig (mit 20–100 Objekten ausreichend)
 
 ## QA Test Results
-_To be added by /qa_
+
+**Datum:** 2026-04-11 | **Tester:** QA Engineer (automatisiert)
+**Gesamtergebnis:** ✅ APPROVED — 2 Low Bugs gefunden, keine High/Critical
+
+### Acceptance Criteria — Prüfprotokoll
+
+| # | Kriterium | Status | Anmerkung |
+|---|-----------|--------|-----------|
+| 1 | Excel-Import (.xlsx): Spalten-Mapping auf Felder | ✅ PASS | COLUMN_MAP mit Aliases, client-seitiges SheetJS Parsing |
+| 2 | Import-Vorschau vor finalem Import (Fehler anzeigen) | ✅ PASS | 3-Schritt-Dialog mit grün/rot Tabelle |
+| 3 | Felder: Objektnummer, Bezeichnung, Straße, PLZ, Ort, Notiz | ✅ PASS | DB-Schema + Formulare korrekt |
+| 4 | 1–N Bankverbindungen (IBAN validiert, BIC, Kontoinhaber, Bank) | ✅ PASS | ibantools Validierung client + server (Defense in Depth) |
+| 5 | Standard-Bankverbindung markierbar | ✅ PASS | DB-Trigger `enforce_single_default_bank_account` |
+| 6 | Objekte als inaktiv markierbar | ✅ PASS | is_active + PATCH-Endpunkt + AlertDialog mit Warnung |
+| 7 | Suche nach Objektnummer, Bezeichnung, Adresse | ✅ PASS | ILIKE via GET ?q= Parameter |
+| 8 | Listenansicht mit Status und Bankverbindungs-Anzahl | ✅ PASS | bank_accounts(count) in SELECT |
+| 9 | Detailansicht: alle Felder + Bankverbindungen | ✅ PASS | GET /api/admin/properties/[id] mit bank_accounts(*) |
+| 10 | IBAN-Validierung bei Eingabe (Format + Prüfziffer) | ✅ PASS | isValidIBAN() in React-Hook-Form + API-Route |
+| 11 | Export der Objektliste als Excel | ✅ PASS | Client-seitig mit SheetJS, kein extra Endpunkt nötig |
+
+### Edge Cases
+
+| Edge Case | Status | Anmerkung |
+|-----------|--------|-----------|
+| Doppelte Objektnummer im Import | ✅ PASS | Skip/Overwrite-Mode, UI zeigt Duplikate in Amber |
+| Ungültige IBAN im Import | ✅ PASS | Zeile wird übersprungen (client preview + server-side check) |
+| Objekt deaktivieren mit offenen Rechnungen | ✅ PASS | Deaktivierung möglich, UI-Warnung: "Rechnungen bleiben erhalten" (PROJ-3 prüft Abhängigkeit) |
+| Excel mit falschen Spalten | ✅ PASS | Klare Fehlermeldung mit gefundenen Spalten angezeigt |
+| Keine Bankverbindung beim Zahllauf | ℹ️ N/A | Wird in PROJ-7 (Zahllauf) implementiert; DB-Design erlaubt 0 Bankverbindungen |
+
+### Bugs
+
+**BUG-001** — Severity: **Low**
+- **Titel:** Direkte State-Mutation beim Löschen der Standard-Bankverbindung
+- **Beschreibung:** In `property-detail-sheet.tsx` Zeile `remaining[0].is_default = true` mutiert das Objekt im State direkt (React-Anti-Pattern). Obwohl `onSetDefault` danach korrekt via `setBankAccounts` aktualisiert, kann es kurze UI-Inkonsistenz geben.
+- **Schritte:** 1. Standard-Bankverbindung löschen wenn andere vorhanden. 2. Beobachte State-Update.
+- **Fix:** `remaining[0] = { ...remaining[0], is_default: true }` (immutable update)
+
+**BUG-002** — Severity: **Low**
+- **Titel:** Import-Response enthält keine `skipped`-Anzahl
+- **Beschreibung:** `POST /api/admin/properties/import` gibt `{ properties, imported }` zurück aber keine Anzahl der übersprungenen Zeilen. Der User sieht bereits in der Preview welche Zeilen ungültig sind, aber ein Backend-`skipped`-Counter wäre hilfreicher für Auditing.
+- **Fix:** `return NextResponse.json({ properties, imported, skipped: rows.length - imported })`
+
+### Testergebnisse
+
+- **Unit Tests:** 44/44 ✅ (`npm test`)
+  - 13 PROJ-1 Unit Tests (Regression)
+  - 12 Integration Tests `GET/POST /api/admin/properties`
+  - 11 Integration Tests `POST /api/admin/properties/import`
+  - 8 Integration Tests `POST /api/admin/properties/[id]/bank-accounts`
+- **E2E Tests:** 35/35 ✅ Chromium (`npm run test:e2e -- --project=chromium`)
+  - 19 PROJ-1 E2E Tests (Regression)
+  - 16 PROJ-2 E2E Tests (Auth Guard, API-Endpunkte, Security)
+- **Getestete Browser:** Chromium ✅
+- **Responsive (Regression Login):** 375px ✅
+
+### Security Audit
+
+| Bereich | Ergebnis |
+|---------|---------|
+| SQL Injection | ✅ Sicher — Supabase parameterized queries |
+| XSS | ✅ Sicher — React escaped rendering |
+| Auth vor DB-Zugriff | ✅ `requireAdmin()` in jeder Route vor allen DB-Calls |
+| Service Role Key | ✅ Nicht im Client-Bundle (nur server-side) |
+| API ohne Auth → 401 (kein Redirect) | ✅ BUG-005 Fix aus PROJ-1 wirkt korrekt |
+| IBAN auf Client UND Server validiert | ✅ Defense in Depth |
+| RLS auf beiden Tabellen | ✅ Migration korrekt |
+| Bulk-Import Größenlimit | ✅ Zod: max 1000 Zeilen |
+| BIC-Format Validierung | ⚠️ Fehlt — nur max(11), kein ISO 9362 Format-Check (Low Risk) |
+
+### Produktions-Empfehlung
+**✅ BEREIT** — 2 Low Bugs gefunden, keine High/Critical Bugs. Beide Bugs sind kosmetischer Natur und blockieren das Deployment nicht.
+
+**Hinweis:** Vor dem ersten Produktionseinsatz muss die SQL-Migration `20260411001_properties.sql` im Supabase Dashboard (SQL Editor) ausgeführt werden.
 
 ## Deployment
 _To be added by /deploy_
