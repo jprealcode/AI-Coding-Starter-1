@@ -1,8 +1,15 @@
 # PROJ-1: Authentifizierung & Benutzerverwaltung
 
-## Status: Approved
+## Status: Deployed
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-11
+**Last Updated:** 2026-04-12
+
+## Deployment
+- **Production URL:** https://ai-coding-starter-kit-eta.vercel.app
+- **Deployed:** 2026-04-12
+- Vercel env vars korrigiert (placeholder.supabase.co → idkgdvsvehaqkeiimcfu.supabase.co)
+- Auth Callback Route aktiv (/auth/callback)
+- Custom Access Token Hook aktiv in Supabase
 
 ## Dependencies
 - None (Basis für alle anderen Features)

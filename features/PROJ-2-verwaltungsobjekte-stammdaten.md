@@ -1,8 +1,13 @@
 # PROJ-2: Verwaltungsobjekte & Stammdaten
 
-## Status: Approved
+## Status: Deployed
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-11
+**Last Updated:** 2026-04-12
+
+## Deployment
+- **Production URL:** https://ai-coding-starter-kit-eta.vercel.app/admin/objekte
+- **Deployed:** 2026-04-12
+- SQL-Migration (properties + bank_accounts) in Supabase eingespielt
 
 ## Dependencies
 - Requires: PROJ-1 (Authentifizierung) — für Admin-Zugang zur Stammdatenverwaltung
