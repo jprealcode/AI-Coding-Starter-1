@@ -1,8 +1,8 @@
 # PROJ-3: Rechnungseingang — Quellen
 
-## Status: Planned
+## Status: Architected
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-10
+**Last Updated:** 2026-04-12
 
 ## Dependencies
 - Requires: PROJ-1 (Authentifizierung)
@@ -46,7 +46,72 @@
 
 ---
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Seitenstruktur
+```
+/rechnungen                    ← Eingangskorb (neue Hauptseite)
++-- Upload-Bereich
+|   +-- Drag & Drop Zone
+|   +-- Datei-Auswählen Button
++-- Eingangskorb-Tabelle
+    +-- Zeile: [Quelle-Icon] | Dateiname | Größe | Eingangsdatum | Status
+
+/admin/einstellungen           ← Neue Admin-Einstellungsseite
++-- Tabs: "Gmail" | "Google Drive"
+    Gmail-Tab:
+    +-- Google-verbinden Button / Konto-Anzeige / Trennen
+    +-- Polling-Intervall (15min / 30min / 60min)
+    Drive-Tab:
+    +-- Google-verbinden Button (gleiche Verbindung wie Gmail)
+    +-- Ordner-ID Eingabe
+```
+
+### Datenmodell
+
+**Tabelle: `invoices`**
+- id, source (upload/gmail/drive), status (neu/...), original_filename, file_size, storage_path, sha256_hash, external_id, uploaded_by, created_at
+
+**Tabelle: `source_settings`**
+- gmail: aktiviert, polling_interval, last_synced, connected_email
+- drive: aktiviert, folder_id, last_synced
+
+**Tabelle: `google_oauth_tokens`** (server-seitig only)
+- access_token, refresh_token, expires_at, scope, account_email
+
+**Supabase Storage Bucket: `invoices`** (privat)
+- Pfad: `{jahr}/{monat}/{id}/{dateiname}.pdf`
+
+### API-Endpunkte
+- `POST /api/rechnungen/upload` — Manueller Upload (Hash-Check → Speichern → DB-Eintrag)
+- `GET /api/rechnungen` — Eingangskorb-Liste (paginiert)
+- `GET /api/auth/google` — Startet OAuth2-Flow
+- `GET /api/auth/google/callback` — OAuth2-Callback, Token speichern
+- `DELETE /api/auth/google` — Verbindung trennen
+- `GET/PUT /api/admin/settings` — Einstellungen lesen/schreiben
+- `GET /api/cron/gmail` — Cron-Job (alle 15 min, CRON_SECRET geschützt)
+- `GET /api/cron/drive` — Cron-Job (alle 15 min, CRON_SECRET geschützt)
+
+### Tech-Entscheidungen
+- **Vercel Cron Jobs** statt Supabase Edge Functions — bereits auf Vercel, kein Extra-System
+- **Eine Google OAuth-Verbindung** für Gmail + Drive — gleicher Account, gleiche Tokens
+- **SHA-256 Hash** für Duplikatserkennung — gleicher Inhalt = gleicher Hash, quellenunabhängig
+- **Supabase Storage** (privat) — RLS schützt Dateizugriff
+- **OAuth Tokens in Supabase DB** — Refresh Tokens müssen zur Laufzeit aktualisierbar sein
+
+### Neue Umgebungsvariablen
+- `GOOGLE_CLIENT_ID` — aus Google Cloud Console
+- `GOOGLE_CLIENT_SECRET` — aus Google Cloud Console
+- `CRON_SECRET` — selbst generiert, schützt Cron-Endpunkte
+
+### Voraussetzung: Google Cloud Console Setup (einmalig)
+1. Neues Projekt erstellen
+2. Gmail API + Google Drive API aktivieren
+3. OAuth2-Credentials erstellen (Typ: Web-Anwendung)
+4. Redirect-URI: `https://ai-coding-starter-kit-eta.vercel.app/api/auth/google/callback`
+5. Client ID + Secret notieren → in .env.local und Vercel eintragen
+
+### Neue Pakete
+- `googleapis` — Google-Client für Gmail + Drive API
 
 ## QA Test Results
 _To be added by /qa_
