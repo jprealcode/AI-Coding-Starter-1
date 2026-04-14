@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { requireAdmin, serviceClient } from '@/lib/require-admin'
+import { sanitizeStorageFilename } from '@/lib/utils'
 
 const MAX_SIZE = 20 * 1024 * 1024 // 20 MB
 
@@ -54,7 +55,8 @@ export async function POST(request: NextRequest) {
   const invoiceId = crypto.randomUUID()
   const now = new Date()
   const month = String(now.getMonth() + 1).padStart(2, '0')
-  const storagePath = `${now.getFullYear()}/${month}/${invoiceId}/${file.name}`
+  const safeFilename = sanitizeStorageFilename(file.name)
+  const storagePath = `${now.getFullYear()}/${month}/${invoiceId}/${safeFilename}`
 
   const { error: storageError } = await db.storage
     .from('invoices')

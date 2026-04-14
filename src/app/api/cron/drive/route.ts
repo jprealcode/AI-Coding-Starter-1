@@ -3,6 +3,7 @@ import { createHash } from 'crypto'
 import { google } from 'googleapis'
 import { getAuthenticatedClient } from '@/lib/google-auth'
 import { serviceClient } from '@/lib/require-admin'
+import { sanitizeStorageFilename } from '@/lib/utils'
 
 export const maxDuration = 60
 
@@ -108,7 +109,8 @@ export async function GET(request: NextRequest) {
         const now = new Date()
         const month = String(now.getMonth() + 1).padStart(2, '0')
         const filename = file.name ?? `drive-${Date.now()}.pdf`
-        const storagePath = `${now.getFullYear()}/${month}/${invoiceId}/${filename}`
+        const safeFilename = sanitizeStorageFilename(filename)
+        const storagePath = `${now.getFullYear()}/${month}/${invoiceId}/${safeFilename}`
 
         const { error: storageErr } = await db.storage
           .from('invoices')
