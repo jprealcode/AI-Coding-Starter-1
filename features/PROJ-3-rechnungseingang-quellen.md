@@ -1,8 +1,18 @@
 # PROJ-3: Rechnungseingang — Quellen
 
-## Status: Architected
+## Status: In Progress
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-12
+**Last Updated:** 2026-04-14
+
+## Implementation Notes (Backend)
+- DB-Tabellen eingespielt: `invoices`, `source_settings`, `google_oauth_tokens`
+- Supabase Storage Bucket `invoices` (privat, max. 20 MB, nur PDF)
+- Google OAuth2 Helper: auto-refresh, Singleton-Tokens in DB
+- APIs: upload, inbox list, OAuth flow, settings, cron/gmail, cron/drive
+- Vercel Cron: beide Jobs alle 15 Minuten (vercel.json)
+- Polling-Intervall-Check im Cron-Handler (skip wenn zu früh)
+- SHA-256 Duplikatserkennung in Upload + Cron-Jobs
+- Frontend: /rechnungen zeigt echte DB-Daten, /admin/einstellungen zeigt Verbindungsstatus
 
 ## Dependencies
 - Requires: PROJ-1 (Authentifizierung)

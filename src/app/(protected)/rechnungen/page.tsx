@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { serviceClient } from '@/lib/require-admin'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { InvoiceInboxTable, type Invoice } from '@/components/rechnungen/invoice-inbox-table'
 import { UploadDropzone } from '@/components/rechnungen/upload-dropzone'
@@ -13,8 +14,14 @@ export default async function RechnungenPage() {
 
   if (!user) redirect('/login')
 
-  // Fetches from DB once /backend is built (PROJ-3)
-  const invoices: Invoice[] = []
+  const db = serviceClient()
+  const { data } = await db
+    .from('invoices')
+    .select('id, source, status, original_filename, file_size, created_at')
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  const invoices = (data ?? []) as Invoice[]
 
   return (
     <div>

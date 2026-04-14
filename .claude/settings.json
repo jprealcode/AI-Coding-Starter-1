@@ -16,7 +16,13 @@
       "Bash(kill:*)",
       "Bash(npx shadcn@latest add:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(npm test:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/janpott/claude/AI-Coding-Starter-1",
+      "/Users/janpott/claude/AI-Coding-Starter-1/src/app/api/admin/users"
     ]
   }
 }
