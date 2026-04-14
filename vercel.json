@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/gmail",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 8 * * *"
     },
     {
       "path": "/api/cron/drive",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 8 * * *"
     }
   ]
 }
