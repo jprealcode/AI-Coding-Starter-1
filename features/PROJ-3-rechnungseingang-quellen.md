@@ -1,8 +1,8 @@
 # PROJ-3: Rechnungseingang — Quellen
 
-## Status: In Progress
+## Status: Approved
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-14
+**Last Updated:** 2026-04-15
 
 ## Implementation Notes (Backend)
 - DB-Tabellen eingespielt: `invoices`, `source_settings`, `google_oauth_tokens`
@@ -127,7 +127,7 @@
 
 **QA-Datum:** 2026-04-14
 **Tester:** QA Engineer (automatisiert)
-**Status: IN REVIEW — 2 High Bugs**
+**Status: APPROVED — alle Bugs behoben**
 
 ### Acceptance Criteria
 
