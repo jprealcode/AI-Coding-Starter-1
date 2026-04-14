@@ -16,12 +16,13 @@ export function createOAuth2Client() {
   )
 }
 
-export function getAuthUrl() {
+export function getAuthUrl(state: string) {
   const client = createOAuth2Client()
   return client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
     scope: SCOPES,
+    state,
   })
 }
 

@@ -14,8 +14,19 @@ export async function GET() {
     return NextResponse.json({ error: 'Nicht authentifiziert' }, { status: 401 })
   }
 
-  const url = getAuthUrl()
-  return NextResponse.redirect(url)
+  // Generate CSRF state token — stored in HttpOnly cookie, verified in callback
+  const state = crypto.randomUUID()
+  const url = getAuthUrl(state)
+
+  const response = NextResponse.redirect(url)
+  response.cookies.set('oauth_state', state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 600, // 10 minutes
+    path: '/',
+  })
+  return response
 }
 
 // DELETE /api/auth/google — Disconnect Google account

@@ -16,11 +16,21 @@ export async function GET(request: NextRequest) {
   }
 
   const code = request.nextUrl.searchParams.get('code')
+  const state = request.nextUrl.searchParams.get('state')
   const error = request.nextUrl.searchParams.get('error')
 
   if (error || !code) {
     return NextResponse.redirect(
       new URL('/admin/einstellungen?error=oauth_abgebrochen', request.url)
+    )
+  }
+
+  // Verify CSRF state token
+  const cookieState = request.cookies.get('oauth_state')?.value
+  if (!state || !cookieState || state !== cookieState) {
+    console.error('[OAuth callback] CSRF state mismatch')
+    return NextResponse.redirect(
+      new URL('/admin/einstellungen?error=oauth_fehlgeschlagen', request.url)
     )
   }
 
@@ -60,9 +70,11 @@ export async function GET(request: NextRequest) {
       updated_at: new Date().toISOString(),
     })
 
-    return NextResponse.redirect(
+    const successResponse = NextResponse.redirect(
       new URL('/admin/einstellungen?success=verbunden', request.url)
     )
+    successResponse.cookies.delete('oauth_state')
+    return successResponse
   } catch (err) {
     console.error('[OAuth callback]', err)
     return NextResponse.redirect(
