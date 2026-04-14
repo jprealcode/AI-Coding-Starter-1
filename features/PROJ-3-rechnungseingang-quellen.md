@@ -1,6 +1,6 @@
 # PROJ-3: Rechnungseingang — Quellen
 
-## Status: Approved
+## Status: Deployed
 **Created:** 2026-04-10
 **Last Updated:** 2026-04-15
 
@@ -182,4 +182,8 @@
 - BUG-002: Gmail/Drive Polling läuft nie (Kernfunktionalität des Features kaputt)
 
 ## Deployment
-_To be added by /deploy_
+- **Production URL:** https://ai-coding-starter-kit-eta.vercel.app/rechnungen
+- **Einstellungen:** https://ai-coding-starter-kit-eta.vercel.app/admin/einstellungen
+- **Deployed:** 2026-04-15
+- Vercel Cron: täglich 08:00 UTC (Hobby-Plan Limit — für 15-Min-Polling: cron-job.org einrichten)
+- Google env vars in Vercel gesetzt: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, CRON_SECRET
