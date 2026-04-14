@@ -31,7 +31,9 @@ export default async function EinstellungenPage({ searchParams }: PageProps) {
   const settings: SourceSettings = {
     googleConnected: settingsRow?.google_connected ?? false,
     googleEmail: settingsRow?.google_email ?? null,
+    gmailEnabled: settingsRow?.gmail_enabled ?? false,
     gmailPollingInterval: String(settingsRow?.gmail_polling_interval ?? 15),
+    driveEnabled: settingsRow?.drive_enabled ?? false,
     driveFolderId: settingsRow?.drive_folder_id ?? null,
   }
 

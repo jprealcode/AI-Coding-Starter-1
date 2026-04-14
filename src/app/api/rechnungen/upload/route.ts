@@ -1,20 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHash } from 'crypto'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { serviceClient } from '@/lib/require-admin'
+import { requireAdmin, serviceClient } from '@/lib/require-admin'
 
 const MAX_SIZE = 20 * 1024 * 1024 // 20 MB
 
-// POST /api/rechnungen/upload — Manual PDF upload
+// POST /api/rechnungen/upload — Manual PDF upload (Admin only)
 export async function POST(request: NextRequest) {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Nicht authentifiziert' }, { status: 401 })
-  }
+  const { user, errorResponse } = await requireAdmin()
+  if (errorResponse) return errorResponse
 
   let formData: FormData
   try {

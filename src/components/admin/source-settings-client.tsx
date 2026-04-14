@@ -13,20 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import {
-  Mail,
-  FolderOpen,
-  CheckCircle2,
-  AlertCircle,
-  ExternalLink,
-} from 'lucide-react'
+import { Mail, FolderOpen, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react'
 
 export interface SourceSettings {
   googleConnected: boolean
   googleEmail: string | null
+  gmailEnabled: boolean
   gmailPollingInterval: string
+  driveEnabled: boolean
   driveFolderId: string | null
 }
 
@@ -35,24 +32,41 @@ interface SourceSettingsClientProps {
 }
 
 export function SourceSettingsClient({ settings }: SourceSettingsClientProps) {
-  const [driveFolderId, setDriveFolderId] = useState(settings.driveFolderId ?? '')
+  const [gmailEnabled, setGmailEnabled] = useState(settings.gmailEnabled)
   const [pollingInterval, setPollingInterval] = useState(settings.gmailPollingInterval)
+  const [driveEnabled, setDriveEnabled] = useState(settings.driveEnabled)
+  const [driveFolderId, setDriveFolderId] = useState(settings.driveFolderId ?? '')
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
-  const handleSave = async () => {
+  const handleSave = async (overrides?: Partial<{ gmailEnabled: boolean; driveEnabled: boolean }>) => {
     setIsSaving(true)
     setSaveSuccess(false)
     try {
       const res = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ driveFolderId, pollingInterval }),
+        body: JSON.stringify({
+          gmailEnabled: overrides?.gmailEnabled ?? gmailEnabled,
+          driveEnabled: overrides?.driveEnabled ?? driveEnabled,
+          driveFolderId: driveFolderId || null,
+          pollingInterval,
+        }),
       })
       if (res.ok) setSaveSuccess(true)
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleGmailToggle = async (checked: boolean) => {
+    setGmailEnabled(checked)
+    await handleSave({ gmailEnabled: checked })
+  }
+
+  const handleDriveToggle = async (checked: boolean) => {
+    setDriveEnabled(checked)
+    await handleSave({ driveEnabled: checked })
   }
 
   const handleDisconnect = async () => {
@@ -131,39 +145,60 @@ export function SourceSettingsClient({ settings }: SourceSettingsClientProps) {
             {settings.googleConnected && (
               <>
                 <Separator />
-                <div className="space-y-2">
-                  <Label>Abruf-Intervall</Label>
-                  <Select value={pollingInterval} onValueChange={setPollingInterval}>
-                    <SelectTrigger className="w-52">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15">Alle 15 Minuten</SelectItem>
-                      <SelectItem value="30">Alle 30 Minuten</SelectItem>
-                      <SelectItem value="60">Stündlich</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-slate-500">
-                    Nur E-Mails mit PDF-Anhang werden verarbeitet.
-                  </p>
+
+                {/* Gmail aktivieren Toggle */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">Gmail-Abruf aktiviert</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Schaltet den automatischen Abruf ein oder aus
+                    </p>
+                  </div>
+                  <Switch
+                    checked={gmailEnabled}
+                    onCheckedChange={handleGmailToggle}
+                    aria-label="Gmail-Abruf aktivieren"
+                  />
                 </div>
 
-                {saveSuccess && (
-                  <Alert className="border-emerald-200 bg-emerald-50">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    <AlertDescription className="text-emerald-700">
-                      Einstellungen gespeichert.
-                    </AlertDescription>
-                  </Alert>
-                )}
+                {gmailEnabled && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label>Abruf-Intervall</Label>
+                      <Select value={pollingInterval} onValueChange={setPollingInterval}>
+                        <SelectTrigger className="w-52">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="15">Alle 15 Minuten</SelectItem>
+                          <SelectItem value="30">Alle 30 Minuten</SelectItem>
+                          <SelectItem value="60">Stündlich</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-slate-500">
+                        Nur E-Mails mit PDF-Anhang werden verarbeitet.
+                      </p>
+                    </div>
 
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  {isSaving ? 'Wird gespeichert…' : 'Einstellungen speichern'}
-                </Button>
+                    {saveSuccess && (
+                      <Alert className="border-emerald-200 bg-emerald-50">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        <AlertDescription className="text-emerald-700">
+                          Einstellungen gespeichert.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button
+                      onClick={() => handleSave()}
+                      disabled={isSaving}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      {isSaving ? 'Wird gespeichert…' : 'Einstellungen speichern'}
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </CardContent>
@@ -195,38 +230,59 @@ export function SourceSettingsClient({ settings }: SourceSettingsClientProps) {
             {settings.googleConnected && (
               <>
                 <Separator />
-                <div className="space-y-2">
-                  <Label htmlFor="folder-id">Eingangsordner-ID</Label>
-                  <Input
-                    id="folder-id"
-                    placeholder="z.B. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
-                    value={driveFolderId}
-                    onChange={(e) => setDriveFolderId(e.target.value)}
+
+                {/* Drive aktivieren Toggle */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">Drive-Überwachung aktiviert</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Schaltet die automatische Ordner-Überwachung ein oder aus
+                    </p>
+                  </div>
+                  <Switch
+                    checked={driveEnabled}
+                    onCheckedChange={handleDriveToggle}
+                    aria-label="Drive-Überwachung aktivieren"
                   />
-                  <p className="text-xs text-slate-500">
-                    Die Ordner-ID steht in der Google Drive URL:{' '}
-                    <span className="font-mono">
-                      drive.google.com/drive/folders/<strong>ID</strong>
-                    </span>
-                  </p>
                 </div>
 
-                {saveSuccess && (
-                  <Alert className="border-emerald-200 bg-emerald-50">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    <AlertDescription className="text-emerald-700">
-                      Einstellungen gespeichert.
-                    </AlertDescription>
-                  </Alert>
-                )}
+                {driveEnabled && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label htmlFor="folder-id">Eingangsordner-ID</Label>
+                      <Input
+                        id="folder-id"
+                        placeholder="z.B. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
+                        value={driveFolderId}
+                        onChange={(e) => setDriveFolderId(e.target.value)}
+                      />
+                      <p className="text-xs text-slate-500">
+                        Die Ordner-ID steht in der Google Drive URL:{' '}
+                        <span className="font-mono">
+                          drive.google.com/drive/folders/<strong>ID</strong>
+                        </span>
+                      </p>
+                    </div>
 
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  {isSaving ? 'Wird gespeichert…' : 'Einstellungen speichern'}
-                </Button>
+                    {saveSuccess && (
+                      <Alert className="border-emerald-200 bg-emerald-50">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        <AlertDescription className="text-emerald-700">
+                          Einstellungen gespeichert.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button
+                      onClick={() => handleSave()}
+                      disabled={isSaving}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      {isSaving ? 'Wird gespeichert…' : 'Einstellungen speichern'}
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </CardContent>

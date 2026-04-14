@@ -4,27 +4,33 @@ import { POST } from './route'
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
-const { mockGetUser, mockServiceClientFrom, mockStorageFrom } = vi.hoisted(() => ({
-  mockGetUser: vi.fn(),
+const { mockRequireAdmin, mockServiceClientFrom, mockStorageFrom } = vi.hoisted(() => ({
+  mockRequireAdmin: vi.fn(),
   mockServiceClientFrom: vi.fn(),
   mockStorageFrom: vi.fn(),
 }))
 
-vi.mock('@/lib/supabase-server', () => ({
-  createServerSupabaseClient: vi.fn(() => ({
-    auth: { getUser: mockGetUser },
-  })),
-}))
-
 vi.mock('@/lib/require-admin', () => ({
+  requireAdmin: mockRequireAdmin,
   serviceClient: vi.fn(() => ({
     from: mockServiceClientFrom,
     storage: { from: mockStorageFrom },
   })),
 }))
 
-const AUTH_OK = { data: { user: { id: 'user-uuid' } } }
-const AUTH_NONE = { data: { user: null } }
+const ADMIN_OK = { user: { id: 'admin-uuid' } }
+const UNAUTH = {
+  errorResponse: new Response(JSON.stringify({ error: 'Nicht authentifiziert' }), {
+    status: 401,
+    headers: { 'Content-Type': 'application/json' },
+  }),
+}
+const FORBIDDEN = {
+  errorResponse: new Response(JSON.stringify({ error: 'Keine Berechtigung' }), {
+    status: 403,
+    headers: { 'Content-Type': 'application/json' },
+  }),
+}
 
 /** Creates a NextRequest where formData() is mocked to avoid multipart-parsing issues in test env */
 function makeUploadRequest(formData: FormData) {
@@ -46,13 +52,19 @@ describe('POST /api/rechnungen/upload', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns 401 when not authenticated', async () => {
-    mockGetUser.mockResolvedValue(AUTH_NONE)
+    mockRequireAdmin.mockResolvedValue(UNAUTH)
     const res = await POST(makeUploadRequest(pdfFormData()))
     expect(res.status).toBe(401)
   })
 
+  it('returns 403 when user is not admin', async () => {
+    mockRequireAdmin.mockResolvedValue(FORBIDDEN)
+    const res = await POST(makeUploadRequest(pdfFormData()))
+    expect(res.status).toBe(403)
+  })
+
   it('returns 400 when no file provided', async () => {
-    mockGetUser.mockResolvedValue(AUTH_OK)
+    mockRequireAdmin.mockResolvedValue(ADMIN_OK)
     const res = await POST(makeUploadRequest(new FormData()))
     expect(res.status).toBe(400)
     const body = await res.json()
@@ -60,7 +72,7 @@ describe('POST /api/rechnungen/upload', () => {
   })
 
   it('returns 400 for non-PDF file', async () => {
-    mockGetUser.mockResolvedValue(AUTH_OK)
+    mockRequireAdmin.mockResolvedValue(ADMIN_OK)
     const fd = new FormData()
     fd.append('file', new File(['hello'], 'test.txt', { type: 'text/plain' }))
     const res = await POST(makeUploadRequest(fd))
@@ -70,7 +82,7 @@ describe('POST /api/rechnungen/upload', () => {
   })
 
   it('returns 409 for duplicate file (same hash)', async () => {
-    mockGetUser.mockResolvedValue(AUTH_OK)
+    mockRequireAdmin.mockResolvedValue(ADMIN_OK)
     mockServiceClientFrom.mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -88,7 +100,7 @@ describe('POST /api/rechnungen/upload', () => {
   })
 
   it('uploads PDF and creates invoice record successfully', async () => {
-    mockGetUser.mockResolvedValue(AUTH_OK)
+    mockRequireAdmin.mockResolvedValue(ADMIN_OK)
 
     // No duplicate found
     mockServiceClientFrom.mockReturnValueOnce({
@@ -128,7 +140,7 @@ describe('POST /api/rechnungen/upload', () => {
   })
 
   it('returns 500 and cleans up storage if DB insert fails', async () => {
-    mockGetUser.mockResolvedValue(AUTH_OK)
+    mockRequireAdmin.mockResolvedValue(ADMIN_OK)
 
     mockServiceClientFrom.mockReturnValueOnce({
       select: vi.fn().mockReturnThis(),
