@@ -1,6 +1,6 @@
 # PROJ-13: Eigentümer-Stammdaten & Objekt-Erweiterung
 
-## Status: In Progress
+## Status: Deployed
 **Created:** 2026-04-18
 **Last Updated:** 2026-04-18
 
@@ -353,4 +353,11 @@ Import-Logik:
 **✅ BEREIT** — Keine Critical/High Bugs mehr. BUG-001 und BUG-002 können nach dem ersten Release behoben werden.
 
 ## Deployment
-_To be added by /deploy_
+
+- **Production URL:** https://ai-coding-starter-kit-eta.vercel.app/admin/eigentumer
+- **Deployed:** 2026-04-18
+- **Commit:** 52e6bb5
+- **Git Tag:** v1.13.0-PROJ-13
+
+**Supabase-Migration erforderlich:**
+Vor dem ersten Aufruf der Eigentümer-Seite muss `supabase/migrations/20260418001_proj13_owners.sql` im Supabase Dashboard → SQL Editor ausgeführt werden. Ohne Migration zeigt die Seite eine leere Liste (graceful fallback), API-Routen funktionieren aber bereits korrekt.

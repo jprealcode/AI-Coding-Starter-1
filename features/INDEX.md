@@ -26,7 +26,7 @@
 | PROJ-10 | Google Drive Ablage | Planned | [Spec](PROJ-10-google-drive-ablage.md) | 2026-04-10 |
 | PROJ-11 | CSV/ERP-Export (DATEV-Buchungsstapel) | Planned | [Spec](PROJ-11-csv-erp-export.md) | 2026-04-10 |
 | PROJ-12 | Kreditoren-Stammdaten (Kreditoren-Kartei) | Planned | [Spec](PROJ-12-kreditoren-stammdaten.md) | 2026-04-18 |
-| PROJ-13 | Eigentümer-Stammdaten & Objekt-Erweiterung | Approved | [Spec](PROJ-13-eigentümer-stammdaten-erweiterung.md) | 2026-04-18 |
+| PROJ-13 | Eigentümer-Stammdaten & Objekt-Erweiterung | Deployed | [Spec](PROJ-13-eigentümer-stammdaten-erweiterung.md) | 2026-04-18 |
 
 <!-- Add features above this line -->
 
