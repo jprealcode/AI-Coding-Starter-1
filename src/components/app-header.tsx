@@ -16,12 +16,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Building2, LayoutDashboard, Users, LogOut, KeyRound, ChevronDown, Inbox, MapPin, Settings } from 'lucide-react'
+import { Building2, LayoutDashboard, Users, LogOut, KeyRound, ChevronDown, Inbox, MapPin, Settings, UserRound } from 'lucide-react'
 
 const adminNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/rechnungen', label: 'Rechnungen', icon: Inbox },
   { href: '/admin/objekte', label: 'Objekte', icon: MapPin },
+  { href: '/admin/eigentumer', label: 'Eigentümer', icon: UserRound },
   { href: '/admin/benutzer', label: 'Benutzer', icon: Users },
   { href: '/admin/einstellungen', label: 'Einstellungen', icon: Settings },
 ]

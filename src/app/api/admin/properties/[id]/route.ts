@@ -10,6 +10,8 @@ const patchSchema = z.object({
   city: z.string().max(100).trim().optional(),
   notes: z.string().max(1000).trim().nullable().optional(),
   is_active: z.boolean().optional(),
+  owner_id: z.string().uuid().nullable().optional(),
+  hauptverantwortlicher_user_id: z.string().uuid().nullable().optional(),
 })
 
 // GET /api/admin/properties/[id] — detail with bank accounts
@@ -25,7 +27,7 @@ export async function GET(
 
   const { data, error } = await client
     .from('properties')
-    .select('*, bank_accounts(*)')
+    .select('*, bank_accounts(*), owner:owners(*)')
     .eq('id', id)
     .single()
 

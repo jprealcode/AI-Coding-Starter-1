@@ -22,6 +22,42 @@ export interface BankAccount {
   created_at: string
 }
 
+export type OwnerType =
+  | 'Privatperson'
+  | 'GmbH'
+  | 'AG'
+  | 'KG'
+  | 'UG'
+  | 'GbR'
+  | 'WEG'
+  | 'Sonstige'
+
+export const OWNER_TYPES: OwnerType[] = [
+  'Privatperson',
+  'GmbH',
+  'AG',
+  'KG',
+  'UG',
+  'GbR',
+  'WEG',
+  'Sonstige',
+]
+
+export interface Owner {
+  id: string
+  name: string
+  type: OwnerType
+  street: string | null
+  postal_code: string | null
+  city: string | null
+  email: string | null
+  phone: string | null
+  tax_id: string | null
+  created_at: string
+  updated_at: string
+  property_count?: number
+}
+
 export interface Property {
   id: string
   object_number: string
@@ -34,6 +70,10 @@ export interface Property {
   created_at: string
   bank_account_count?: number
   bank_accounts?: BankAccount[]
+  owner_id?: string | null
+  owner?: Owner | null
+  hauptverantwortlicher_user_id?: string | null
+  hauptverantwortlicher?: Profile | null
 }
 
 export interface ImportRow {
@@ -46,7 +86,17 @@ export interface ImportRow {
   bic?: string
   account_holder?: string
   bank_name?: string
+  // PROJ-13: Eigentümer + Hauptverantwortlicher
+  owner_name?: string
+  owner_type?: string
+  owner_street?: string
+  owner_postal_code?: string
+  owner_city?: string
+  owner_email?: string
+  owner_tax_id?: string
+  hauptverantwortlicher_email?: string
   _errors: string[]
   _isValid: boolean
   _isDuplicate: boolean
+  _warnings: string[]
 }

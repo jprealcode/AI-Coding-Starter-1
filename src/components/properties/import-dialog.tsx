@@ -50,6 +50,25 @@ const COLUMN_MAP: Record<string, keyof ImportRow> = {
   bank: 'bank_name',
   bankname: 'bank_name',
   'bank-name': 'bank_name',
+  // PROJ-13: Eigentümer
+  'eigentümer-name': 'owner_name',
+  'eigentümer name': 'owner_name',
+  eigentümername: 'owner_name',
+  'eigentümer-typ': 'owner_type',
+  eigentümertyp: 'owner_type',
+  'eigentümer-straße': 'owner_street',
+  'eigentümer straße': 'owner_street',
+  'eigentümer-plz': 'owner_postal_code',
+  'eigentümer plz': 'owner_postal_code',
+  'eigentümer-ort': 'owner_city',
+  'eigentümer ort': 'owner_city',
+  'eigentümer-email': 'owner_email',
+  'eigentümer email': 'owner_email',
+  'eigentümer-ust-id': 'owner_tax_id',
+  'eigentümer ust-id': 'owner_tax_id',
+  'eigentümer-steuernummer': 'owner_tax_id',
+  hauptverantwortlicher: 'hauptverantwortlicher_email',
+  'hauptverantwortlicher (e-mail)': 'hauptverantwortlicher_email',
 }
 
 function parseSheet(
@@ -63,6 +82,7 @@ function parseSheet(
       _errors: [],
       _isValid: false,
       _isDuplicate: false,
+      _warnings: [],
     }
 
     // Spalten mappen

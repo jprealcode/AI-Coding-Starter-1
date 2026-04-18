@@ -28,8 +28,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Loader2, AlertCircle, Pencil, Trash2, Star, StarOff, Plus, X } from 'lucide-react'
-import type { Property, BankAccount } from '@/lib/types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Loader2, AlertCircle, Pencil, Trash2, Star, StarOff, Plus, X, AlertTriangle } from 'lucide-react'
+import type { Property, BankAccount, Owner, Profile } from '@/lib/types'
 import { isValidIBAN } from 'ibantools'
 
 // ─── Stammdaten-Formular ───────────────────────────────────────────────────
@@ -65,6 +72,7 @@ interface PropertyDetailSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onUpdated: (property: Property) => void
+  profiles: Profile[]
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────
@@ -74,6 +82,7 @@ export function PropertyDetailSheet({
   open,
   onOpenChange,
   onUpdated,
+  profiles,
 }: PropertyDetailSheetProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -81,6 +90,19 @@ export function PropertyDetailSheet({
   const [isLoadingBanks, setIsLoadingBanks] = useState(false)
   const [showBankForm, setShowBankForm] = useState(false)
   const [bankError, setBankError] = useState<string | null>(null)
+
+  // Eigentümer state
+  const [owners, setOwners] = useState<Owner[]>([])
+  const [isEditingOwner, setIsEditingOwner] = useState(false)
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('')
+  const [isSavingOwner, setIsSavingOwner] = useState(false)
+  const [ownerError, setOwnerError] = useState<string | null>(null)
+
+  // Hauptverantwortlicher state
+  const [isEditingHV, setIsEditingHV] = useState(false)
+  const [selectedHVId, setSelectedHVId] = useState<string>('')
+  const [isSavingHV, setIsSavingHV] = useState(false)
+  const [hvError, setHVError] = useState<string | null>(null)
 
   const {
     register: registerProperty,
@@ -96,7 +118,7 @@ export function PropertyDetailSheet({
     formState: { errors: bankErrors, isSubmitting: isSavingBank },
   } = useForm<BankFormData>({ resolver: zodResolver(bankSchema) })
 
-  // Laden der Bankverbindungen wenn property sich ändert
+  // Laden der Daten wenn property sich ändert
   useEffect(() => {
     if (!property || !open) return
     resetProperty({
@@ -111,7 +133,14 @@ export function PropertyDetailSheet({
     setSaveError(null)
     setShowBankForm(false)
     setBankError(null)
+    setIsEditingOwner(false)
+    setSelectedOwnerId(property.owner_id ?? '')
+    setOwnerError(null)
+    setIsEditingHV(false)
+    setSelectedHVId(property.hauptverantwortlicher_user_id ?? '')
+    setHVError(null)
     loadBankAccounts(property.id)
+    loadOwners()
   }, [property?.id, open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadBankAccounts(propertyId: string) {
@@ -124,6 +153,64 @@ export function PropertyDetailSheet({
       }
     } finally {
       setIsLoadingBanks(false)
+    }
+  }
+
+  async function loadOwners() {
+    try {
+      const res = await fetch('/api/admin/eigentumer')
+      if (res.ok) {
+        const data = await res.json()
+        setOwners(data.owners ?? [])
+      }
+    } catch {
+      // owners API not yet available — backend pending
+    }
+  }
+
+  async function onSaveOwner() {
+    if (!property) return
+    setIsSavingOwner(true)
+    setOwnerError(null)
+    try {
+      const res = await fetch(`/api/admin/properties/${property.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner_id: selectedOwnerId || null }),
+      })
+      if (!res.ok) {
+        const body = await res.json()
+        setOwnerError(body.error ?? 'Fehler beim Speichern')
+        return
+      }
+      const { property: updated } = await res.json()
+      onUpdated(updated)
+      setIsEditingOwner(false)
+    } finally {
+      setIsSavingOwner(false)
+    }
+  }
+
+  async function onSaveHauptverantwortlicher() {
+    if (!property) return
+    setIsSavingHV(true)
+    setHVError(null)
+    try {
+      const res = await fetch(`/api/admin/properties/${property.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hauptverantwortlicher_user_id: selectedHVId || null }),
+      })
+      if (!res.ok) {
+        const body = await res.json()
+        setHVError(body.error ?? 'Fehler beim Speichern')
+        return
+      }
+      const { property: updated } = await res.json()
+      onUpdated(updated)
+      setIsEditingHV(false)
+    } finally {
+      setIsSavingHV(false)
     }
   }
 
@@ -576,6 +663,210 @@ export function PropertyDetailSheet({
                 </Button>
               </div>
             </form>
+          )}
+        </section>
+
+        <Separator className="my-4" />
+
+        {/* ── Eigentümer ── */}
+        <section className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-slate-700">Eigentümer</h3>
+            {!isEditingOwner && (
+              <Button variant="ghost" size="sm" onClick={() => setIsEditingOwner(true)}>
+                <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                Bearbeiten
+              </Button>
+            )}
+          </div>
+
+          {isEditingOwner ? (
+            <div className="space-y-3">
+              {ownerError && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <AlertDescription className="text-xs">{ownerError}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-1">
+                <Label className="text-xs">Eigentümer auswählen</Label>
+                <Select
+                  value={selectedOwnerId}
+                  onValueChange={setSelectedOwnerId}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Kein Eigentümer hinterlegt" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">— Kein Eigentümer —</SelectItem>
+                    {owners.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.name}
+                        <span className="text-xs text-slate-400 ml-2">{o.type}</span>
+                      </SelectItem>
+                    ))}
+                    {owners.length === 0 && (
+                      <SelectItem value="" disabled>
+                        Noch keine Eigentümer angelegt
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  disabled={isSavingOwner}
+                  onClick={onSaveOwner}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {isSavingOwner ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Speichern'}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { setIsEditingOwner(false); setOwnerError(null) }}
+                >
+                  Abbrechen
+                </Button>
+              </div>
+            </div>
+          ) : (
+            (() => {
+              const owner = property.owner ?? owners.find((o) => o.id === property.owner_id)
+              return owner ? (
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <div>
+                    <dt className="text-xs text-slate-400">Name</dt>
+                    <dd className="text-slate-700 font-medium">{owner.name}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-slate-400">Typ</dt>
+                    <dd className="text-slate-700">{owner.type}</dd>
+                  </div>
+                  {(owner.street || owner.city) && (
+                    <div className="col-span-2">
+                      <dt className="text-xs text-slate-400">Adresse</dt>
+                      <dd className="text-slate-700">
+                        {[owner.street, [owner.postal_code, owner.city].filter(Boolean).join(' ')]
+                          .filter(Boolean)
+                          .join(', ')}
+                      </dd>
+                    </div>
+                  )}
+                  {owner.email && (
+                    <div>
+                      <dt className="text-xs text-slate-400">E-Mail</dt>
+                      <dd className="text-slate-700">{owner.email}</dd>
+                    </div>
+                  )}
+                  {owner.tax_id && (
+                    <div>
+                      <dt className="text-xs text-slate-400">USt-ID</dt>
+                      <dd className="text-slate-700">{owner.tax_id}</dd>
+                    </div>
+                  )}
+                </dl>
+              ) : (
+                <p className="text-sm text-slate-400 py-1">Kein Eigentümer hinterlegt.</p>
+              )
+            })()
+          )}
+        </section>
+
+        <Separator className="my-4" />
+
+        {/* ── Hauptverantwortlicher ── */}
+        <section className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-slate-700">Hauptverantwortlicher</h3>
+            {!isEditingHV && (
+              <Button variant="ghost" size="sm" onClick={() => setIsEditingHV(true)}>
+                <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                Bearbeiten
+              </Button>
+            )}
+          </div>
+
+          {isEditingHV ? (
+            <div className="space-y-3">
+              {hvError && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <AlertDescription className="text-xs">{hvError}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-1">
+                <Label className="text-xs">Benutzer auswählen</Label>
+                <Select value={selectedHVId} onValueChange={setSelectedHVId}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Standard (Admin)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">— Standard (Admin) —</SelectItem>
+                    {profiles.map((p) => (
+                      <SelectItem key={p.user_id} value={p.user_id}>
+                        {p.display_name}
+                        <span className="text-xs text-slate-400 ml-2">{p.email}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  disabled={isSavingHV}
+                  onClick={onSaveHauptverantwortlicher}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {isSavingHV ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Speichern'}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { setIsEditingHV(false); setHVError(null) }}
+                >
+                  Abbrechen
+                </Button>
+              </div>
+            </div>
+          ) : (
+            (() => {
+              const hv = property.hauptverantwortlicher ??
+                profiles.find((p) => p.user_id === property.hauptverantwortlicher_user_id)
+              const hvFromSelected = profiles.find((p) => p.user_id === selectedHVId)
+              const current = hv ?? hvFromSelected
+              const isInactive = current && !current.is_active
+              return (
+                <div>
+                  {isInactive && (
+                    <Alert className="mb-2 border-amber-200 bg-amber-50 py-2">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                      <AlertDescription className="text-xs text-amber-700">
+                        Hauptverantwortlicher nicht aktiv — bitte neu zuweisen
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {current ? (
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                      <div>
+                        <dt className="text-xs text-slate-400">Name</dt>
+                        <dd className="text-slate-700 font-medium">{current.display_name}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-slate-400">E-Mail</dt>
+                        <dd className="text-slate-700">{current.email}</dd>
+                      </div>
+                    </dl>
+                  ) : (
+                    <p className="text-sm text-slate-400 py-1">Standard (Admin/Buchhalter)</p>
+                  )}
+                </div>
+              )
+            })()
           )}
         </section>
 

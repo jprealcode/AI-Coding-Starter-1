@@ -14,16 +14,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Building2, Plus, Upload, Download, Search, Banknote } from 'lucide-react'
-import type { Property } from '@/lib/types'
+import type { Property, Profile } from '@/lib/types'
 import { NewPropertyDialog } from './new-property-dialog'
 import { PropertyDetailSheet } from './property-detail-sheet'
 import { ImportDialog } from './import-dialog'
 
 interface PropertiesClientProps {
   initialProperties: Property[]
+  profiles: Profile[]
 }
 
-export function PropertiesClient({ initialProperties }: PropertiesClientProps) {
+export function PropertiesClient({ initialProperties, profiles }: PropertiesClientProps) {
   const [properties, setProperties] = useState<Property[]>(initialProperties)
   const [search, setSearch] = useState('')
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
@@ -92,7 +93,15 @@ export function PropertiesClient({ initialProperties }: PropertiesClientProps) {
       Ort: p.city,
       Notiz: p.notes ?? '',
       Status: p.is_active ? 'Aktiv' : 'Inaktiv',
-      Bankverbindungen: p.bank_account_count ?? 0,
+      'Eigentümer-Name': p.owner?.name ?? '',
+      'Eigentümer-Typ': p.owner?.type ?? '',
+      'Eigentümer-Straße': p.owner?.street ?? '',
+      'Eigentümer-PLZ': p.owner?.postal_code ?? '',
+      'Eigentümer-Ort': p.owner?.city ?? '',
+      'Eigentümer-E-Mail': p.owner?.email ?? '',
+      'Eigentümer-USt-ID': p.owner?.tax_id ?? '',
+      'Hauptverantwortlicher (E-Mail)':
+        profiles.find((pr) => pr.user_id === p.hauptverantwortlicher_user_id)?.email ?? '',
     }))
     const ws = utils.json_to_sheet(rows)
     const wb = utils.book_new()
@@ -232,6 +241,7 @@ export function PropertiesClient({ initialProperties }: PropertiesClientProps) {
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
         onUpdated={handlePropertyUpdated}
+        profiles={profiles}
       />
 
       <ImportDialog
