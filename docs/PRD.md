@@ -37,6 +37,7 @@ Ein digitaler Eingangsrechnungs-Workflow für professionelle Hausverwaltungen. D
 | P1 | PROJ-10: Google Drive Ablage | Planned |
 | P2 | PROJ-11: CSV/ERP-Export | Planned |
 | P0 (MVP) | PROJ-12: Kreditoren-Stammdaten (Kreditoren-Kartei) | Planned |
+| P0 (MVP) | PROJ-13: Eigentümer-Stammdaten & Objekt-Erweiterung | Planned |
 
 ## Success Metrics
 - Rechnungserfassung: < 2 Minuten von Eingang bis Dashboard-Anzeige
