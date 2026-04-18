@@ -25,7 +25,8 @@
 | PROJ-9 | DATEV UNTERNEHMEN online API | Planned | [Spec](PROJ-9-datev-api-anbindung.md) | 2026-04-10 |
 | PROJ-10 | Google Drive Ablage | Planned | [Spec](PROJ-10-google-drive-ablage.md) | 2026-04-10 |
 | PROJ-11 | CSV/ERP-Export (DATEV-Buchungsstapel) | Planned | [Spec](PROJ-11-csv-erp-export.md) | 2026-04-10 |
+| PROJ-12 | Kreditoren-Stammdaten (Kreditoren-Kartei) | Planned | [Spec](PROJ-12-kreditoren-stammdaten.md) | 2026-04-18 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-12
+## Next Available ID: PROJ-13
